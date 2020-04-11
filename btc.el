@@ -32,23 +32,28 @@
 ;;; Code:
 
 (require 'request)
-(require 'json-pointer)
+(require 'json)
+
+(defun btc->usd (&optional amount)
+  "Convert custom AMOUNT of BTC to current USD price."
+  (interactive
+   "nBTC: ")
+  (let* ((resp (request-response-data
+	       (request
+		 "https://api.coinbase.com/v2/prices/BTC-USD/spot"
+		 :parser 'json-read
+		 :sync t)))
+	(btc-value (assoc-default 'amount (assoc-default 'data resp))))
+    (message (format "$%0.2f" (* (or amount 1) (string-to-number btc-value))))))
 
 (defun btc-usd ()
   "Display the latest BTC value in USD."
   (interactive)
-  (request
-   "https://api.coinbase.com/v2/prices/BTC-USD/spot"
-   :parser 'json-read
-   :success (function*
-             (lambda (&key data &allow-other-keys)
-	       (let ((btc-value (string-to-number (json-pointer-get data "/data/amount"))))
-		 (message "BTC: $%0.2f" btc-value))))))
+  (btc->usd))
 
 ;; (run-at-time "1 min" 60 'btc-usd)
 
 (require 'websocket)
-(require 'json)
 (require 'cl)
 (require 'all-the-icons)
 
